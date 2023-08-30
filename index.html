@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Leaflet.AccuratePosition example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Accurate Position Plugin -->
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/Leaflet.AccuratePosition.js"></script>
+</head>
+
+<body>
+    <div id="map"></div>
+    <ul id="status" class="progressing">
+        <li>Find accurate position … (Desired accuracy: 20)</li>
+    </ul>
+
+    <script>
+        var map = L.map('map').setView([40.44695, -345.23437], 1);
+
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        function onAccuratePositionError(e) {
+            addStatus(e.message, 'error');
+        }
+
+        function onAccuratePositionProgress(e) {
+            var message = 'Progressing … (Accuracy: ' + e.accuracy + ')';
+            addStatus(message, 'progressing');
+        }
+
+        function onAccuratePositionFound(e) {
+            var message = 'Most accurate position found (Accuracy: ' + e.accuracy + ')';
+            addStatus(message, 'done');
+            map.setView(e.latlng, 12);
+            L.marker(e.latlng).addTo(map);
+            map.addEventListener('change', onLocationChanged);
+        }
+
+        function addStatus(message, className) {
+            var ul = document.getElementById('status'),
+                li = document.createElement('li');
+            li.appendChild(document.createTextNode(message));
+            ul.className = className;
+            ul.appendChild(li);
+
+            if (className === 'done') {
+                ul.innerHTML = '<li>Tracking live location …</li>';
+            }
+        }
+
+        var watchId = navigator.geolocation.watchPosition(function (position) {
+            console.log('Location changed:', position);
+        });
+
+        function onLocationChanged(position) {
+            console.log('Location changed:', position);
+        }
+
+        map.on('accuratepositionprogress', onAccuratePositionProgress);
+        map.on('accuratepositionfound', onAccuratePositionFound);
+        map.on('accuratepositionerror', onAccuratePositionError);
+
+        map.findAccuratePosition({
+            maxWait: 10000,
+            desiredAccuracy: 20
+        });
+    </script>
+</body>
+
+</html>
